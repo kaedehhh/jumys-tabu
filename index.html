@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Жұмыс орындарын ұсыну жүйесі</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--tx:#1d2433;--mu:#667085;--ac:#2f5bea;--bd:#e3e6ef;--code:#f0f2f8}
+@media(prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1b2030;--tx:#e8ebf4;--mu:#9aa3b8;--ac:#7c9bff;--bd:#2a3146;--code:#141824}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--tx)}
+header{padding:28px 20px 8px;max-width:1000px;margin:auto}h1{margin:0 0 4px;font-size:24px}.mu{color:var(--mu);font-size:13px}
+nav{max-width:1000px;margin:12px auto;padding:0 20px;display:flex;gap:6px;flex-wrap:wrap}
+nav button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+main{max-width:1000px;margin:auto;padding:0 20px 40px}section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+.card h3{margin:0 0 4px;font-size:16px}pre,textarea{background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px;font:13px/1.5 ui-monospace,Consolas,monospace;color:var(--tx);overflow-x:auto;width:100%}
+textarea{height:130px;resize:vertical}
+button.run{background:var(--ac);color:#fff;border:0;padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit}
+select{padding:8px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit}
+.sc{overflow-x:auto;margin-top:10px}table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--bd);padding:6px 10px;text-align:left;white-space:nowrap}th{color:var(--mu);font-weight:600}
+.bar{height:8px;border-radius:4px;background:var(--bd);min-width:90px}.bar i{display:block;height:100%;border-radius:4px;background:var(--ac)}
+.tag{display:inline-block;background:var(--code);border:1px solid var(--bd);border-radius:20px;padding:2px 10px;margin:2px;font-size:13px}
+img{max-width:100%;border-radius:10px}.err{color:#d92d20}
+</style>
+</head>
+<body>
+<header>
+  <h1>Жасанды интеллект негізіндегі жұмыс орындарын ұсыну жүйесі</h1>
+  <div class="mu">«Деректер базасы және SQL сұратымдар» пәні бойынша курстық жұмыс · Л. Н. Гумилев атындағы ЕҰУ · Айдархан Әмина, Бектемір Айзада · Жетекші: Елибаева Г.К.</div>
+  <p id="status" class="mu">SQLite жүктелуде…</p>
+</header>
+<nav id="tabs"></nav>
+<main>
+<section id="rec" class="on">
+  <div class="card"><h3>Вакансияларды ұсыну</h3>
+    <p class="mu">Пайдаланушыны таңдаңыз: жүйе оның дағдыларын вакансия талаптарымен (User_Skills ↔ Vacancy_Skills) салыстырады.</p>
+    <select id="user"></select><div id="uskills" style="margin-top:10px"></div></div>
+  <div class="card"><div id="recres"></div><pre id="recsql"></pre></div>
+</section>
+<section id="qs"></section>
+<section id="sql"><div class="card"><h3>Өз SQL сұранысыңыз</h3>
+  <textarea id="own" spellcheck="false">SELECT * FROM Vacancies;</textarea><p><button class="run" id="ownrun">Орындау</button></p><div id="ownres"></div></div></section>
+<section id="tbl"><div class="card"><h3>Кестелер</h3><select id="tsel"></select><div id="tres"></div></div></section>
+<section id="er"><div class="card"><h3>ER-диаграмма (Дж. Мартин нотациясы)</h3><img src="er.jpg" alt="ER-диаграмма"></div></section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=v=>String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let db;
+const tabs=[['rec','Ұсыныстар'],['qs','18 SQL сұраныс'],['sql','Өз SQL'],['tbl','Кестелер'],['er','ER-диаграмма']];
+$('#tabs').innerHTML=tabs.map(([id,t])=>`<button data-id="${id}" class="${id==='rec'?'on':''}">${t}</button>`).join('');
+$('#tabs').onclick=e=>{const id=e.target.dataset.id;if(!id)return;
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b===e.target));
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===id));};
+
+function tableHtml(res){
+  if(!res.length)return '<p class="mu">Нәтиже жоқ (0 жол)</p>';
+  const {columns:c,values:v}=res[0];
+  return `<div class="sc"><table><tr>${c.map(x=>`<th>${esc(x)}</th>`).join('')}</tr>${v.map(r=>`<tr>${r.map(x=>`<td>${x===null?'NULL':esc(x)}</td>`).join('')}</tr>`).join('')}</table></div><p class="mu">${v.length} жол</p>`;
+}
+function run(sql,params,target){
+  try{target.innerHTML=tableHtml(db.exec(sql,params))}
+  catch(e){target.innerHTML=`<p class="err">Қате: ${esc(e.message)}</p>`}
+}
+
+const RECSQL=`SELECT v.title, c.company_name, v.city, v.salary, v.experience_years,
+  (SELECT COUNT(*) FROM Vacancy_Skills WHERE vacancy_id = v.vacancy_id) AS required,
+  COUNT(us.skill_id) AS matched
+FROM Vacancies v
+JOIN Companies c ON c.company_id = v.company_id
+LEFT JOIN Vacancy_Skills vs ON vs.vacancy_id = v.vacancy_id
+LEFT JOIN User_Skills us ON us.skill_id = vs.skill_id AND us.user_id = ?
+GROUP BY v.vacancy_id;`;
+
+function recommend(){
+  const uid=+$('#user').value;
+  const sk=db.exec(`SELECT s.skill_name, us.skill_level FROM User_Skills us JOIN Skills s USING(skill_id) WHERE us.user_id=?`,[uid]);
+  $('#uskills').innerHTML=sk.length?sk[0].values.map(([n,l])=>`<span class="tag">${esc(n)} · ${esc(l)}</span>`).join(''):'<span class="mu">Дағдылар көрсетілмеген</span>';
+  const rows=db.exec(RECSQL,[uid])[0].values.map(r=>({title:r[0],co:r[1],city:r[2],sal:r[3],exp:r[4],req:r[5],m:r[6],p:r[5]?r[6]/r[5]:0}))
+    .sort((a,b)=>b.p-a.p||b.sal-a.sal);
+  $('#recres').innerHTML=`<div class="sc"><table><tr><th>Вакансия</th><th>Компания</th><th>Қала</th><th>Жалақы</th><th>Тәжірибе</th><th>Сәйкестік</th></tr>${rows.map(r=>
+    `<tr><td>${esc(r.title)}</td><td>${esc(r.co)}</td><td>${esc(r.city)}</td><td>${r.sal.toLocaleString('ru-RU')} ₸</td><td>${r.exp} жыл</td>
+    <td><div class="bar"><i style="width:${r.p*100}%"></i></div>${r.req?`${r.m}/${r.req} (${Math.round(r.p*100)}%)`:'талап жоқ'}</td></tr>`).join('')}</table></div>`;
+  $('#recsql').textContent=RECSQL;
+}
+
+(async()=>{
+  try{
+    const [SQL,buf,Q]=await Promise.all([
+      initSqlJs({locateFile:f=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${f}`}),
+      fetch('vacancies.db').then(r=>r.arrayBuffer()),
+      fetch('queries.json').then(r=>r.json())]);
+    db=new SQL.Database(new Uint8Array(buf));
+    $('#status').textContent='Деректер базасы дайын: 7 кесте, SQL браузерде орындалады.';
+    $('#user').innerHTML=db.exec('SELECT user_id, full_name, city FROM Users')[0].values.map(([i,n,c])=>`<option value="${i}">${esc(n)} (${esc(c)})</option>`).join('');
+    $('#user').onchange=recommend;recommend();
+    $('#qs').innerHTML=Q.map((q,i)=>`<div class="card"><h3>${i+1}. ${esc(q.title)}</h3><p class="mu">${esc(q.note)}</p><pre>${esc(q.sql)}</pre>
+      <button class="run" data-i="${i}">Орындау</button><div id="q${i}"></div></div>`).join('');
+    $('#qs').onclick=e=>{const i=e.target.dataset.i;if(i!==undefined)run(Q[i].sql,[],$('#q'+i))};
+    $('#ownrun').onclick=()=>run($('#own').value,[],$('#ownres'));
+    const names=db.exec("SELECT name FROM sqlite_master WHERE type='table'")[0].values.map(r=>r[0]);
+    $('#tsel').innerHTML=names.map(n=>`<option>${n}</option>`).join('');
+    $('#tsel').onchange=()=>run(`SELECT * FROM ${$('#tsel').value}`,[],$('#tres'));$('#tsel').onchange();
+  }catch(e){
+    $('#status').innerHTML='<span class="err">Жүктеу қатесі. Файлды қосу арқылы емес, сервер арқылы ашыңыз (python main.py --serve). '+esc(e.message)+'</span>';
+  }
+})();
+</script>
+</body>
+</html>

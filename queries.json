@@ -1,0 +1,92 @@
+[
+ {
+  "title": "SELECT - барлық бағандар",
+  "sql": "SELECT * FROM Users;",
+  "note": "Users кестесіндегі барлық бағандар мен жазбалар шығады."
+ },
+ {
+  "title": "SELECT - белгілі бағандар",
+  "sql": "SELECT full_name, email, city FROM Users;",
+  "note": "Тек аты-жөні, поштасы және қаласы көрсетіледі."
+ },
+ {
+  "title": "DISTINCT",
+  "sql": "SELECT DISTINCT city FROM Users;",
+  "note": "Пайдаланушылар қалалары қайталанусыз шығады."
+ },
+ {
+  "title": "WHERE",
+  "sql": "SELECT * FROM Vacancies WHERE city = 'Астана';",
+  "note": "Астана қаласындағы вакансиялар."
+ },
+ {
+  "title": "WHERE + AND",
+  "sql": "SELECT * FROM Vacancies WHERE salary > 400000 AND experience_years >= 1;",
+  "note": "Жалақысы 400 000 теңгеден жоғары және кемінде 1 жыл тәжірибе талап ететін вакансиялар."
+ },
+ {
+  "title": "WHERE + OR",
+  "sql": "SELECT * FROM Vacancies WHERE city = 'Астана' OR city = 'Алматы';",
+  "note": "Астана немесе Алматыдағы вакансиялар."
+ },
+ {
+  "title": "IN",
+  "sql": "SELECT * FROM Skills WHERE category IN ('Бағдарламалау', 'Жасанды интеллект');",
+  "note": "Санаты берілген мәндердің біреуіне тең дағдылар."
+ },
+ {
+  "title": "BETWEEN",
+  "sql": "SELECT * FROM Vacancies WHERE salary BETWEEN 300000 AND 500000;",
+  "note": "Жалақысы 300 000 - 500 000 аралығындағы вакансиялар (шекаралар қосылады)."
+ },
+ {
+  "title": "LIKE",
+  "sql": "SELECT * FROM Vacancies WHERE title LIKE '%Developer%';",
+  "note": "Атауында Developer сөзі бар вакансиялар."
+ },
+ {
+  "title": "ORDER BY",
+  "sql": "SELECT title, salary FROM Vacancies ORDER BY salary DESC;",
+  "note": "Вакансиялар жалақы бойынша кему ретімен сұрыпталады."
+ },
+ {
+  "title": "LIMIT",
+  "sql": "SELECT title, salary FROM Vacancies ORDER BY salary DESC LIMIT 3;",
+  "note": "Жалақысы ең жоғары үш вакансия."
+ },
+ {
+  "title": "COUNT, MIN, MAX",
+  "sql": "SELECT COUNT(*) AS total, MIN(salary) AS min_salary, MAX(salary) AS max_salary FROM Vacancies;",
+  "note": "Вакансия саны, ең төмен және ең жоғары жалақы."
+ },
+ {
+  "title": "JOIN",
+  "sql": "SELECT u.full_name, v.title, a.application_date, a.status\nFROM Applications a\nJOIN Users u ON a.user_id = u.user_id\nJOIN Vacancies v ON a.vacancy_id = v.vacancy_id\nWHERE a.status = 'Қаралуда';",
+  "note": "Өтінімдер, пайдаланушылар және вакансиялар біріктіріледі; тек «Қаралуда» мәртебесі."
+ },
+ {
+  "title": "GROUP BY",
+  "sql": "SELECT city, COUNT(*) AS vacancy_count FROM Vacancies GROUP BY city;",
+  "note": "Әр қаладағы вакансиялар саны."
+ },
+ {
+  "title": "GROUP BY + SUM",
+  "sql": "SELECT city, SUM(salary) AS total_salary FROM Vacancies GROUP BY city;",
+  "note": "Қалалар бойынша вакансиялардағы жалақы мөлшерлерінің қосындысы."
+ },
+ {
+  "title": "GROUP BY + LEFT JOIN",
+  "sql": "SELECT c.company_name, COUNT(v.vacancy_id) AS vacancy_count\nFROM Companies c\nLEFT JOIN Vacancies v ON c.company_id = v.company_id\nGROUP BY c.company_name;",
+  "note": "Әр компаниядағы вакансия саны; вакансиясы жоқ компания үшін 0."
+ },
+ {
+  "title": "UNION",
+  "sql": "SELECT city FROM Users UNION SELECT city FROM Companies;",
+  "note": "Пайдаланушылар мен компаниялар қалалары, қайталанбайды."
+ },
+ {
+  "title": "UNION ALL",
+  "sql": "SELECT city FROM Users UNION ALL SELECT city FROM Companies;",
+  "note": "Қайталанатын жолдар сақталады."
+ }
+]
